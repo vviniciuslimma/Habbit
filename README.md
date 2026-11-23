@@ -40,3 +40,10 @@ node scripts/build.mjs
 Variáveis privadas da hospedagem: `HABBIT_SYNC_SECRET`, `HABBIT_SYNC_URL`. Nunca colocar o valor do segredo em Git. O hash de verificação é público na Edge Function; para rotacionar, atualizar o segredo na hospedagem e o hash na função.
 
 O plano Supabase Free pode pausar após inatividade. Não há contratação de plano pago. Backups JSON continuam disponíveis. Ao mover a hospedagem para outro domínio, exporte e importe o backup de registros ainda locais. O backend depende dos cabeçalhos de identidade autenticados da hospedagem Sites; não se deve hospedá-lo em um servidor que aceite esses cabeçalhos diretamente de visitantes sem validação.
+
+## GitHub Pages com login próprio
+Execute `node scripts/build-pages.mjs` e publique a pasta `docs/` da branch `main` em Settings → Pages. Essa versão usa Supabase Auth com e-mail/senha, sem login do ChatGPT. Não há tela de cadastro. Somente contas presentes em `habbit.account_links` têm acesso, protegido por RLS. A ligação de contas é feita administrativamente, nunca pelo navegador nem por metadados editáveis.
+
+A migração `002_habbit_account_login.sql` adiciona as funções e políticas de acesso. O vínculo privado aponta para o mesmo documento do site original, sem copiar o histórico. O SDK supabase-js está fixado em 2.119.2 e é carregado de jsDelivr. A chave `sb_publishable_...` é pública por definição e não concede acesso sem autenticação e autorização.
+
+Para entrar, use a senha da conta Supabase já existente. A senha nunca faz parte do código ou do repositório. Para redefini-la, utilize o fluxo seguro da conta; não envie senhas pelo chat. O cadastro de novas contas no projeto Treinago não é alterado globalmente: o isolamento do Habbit é aplicado no banco.
