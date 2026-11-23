@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {makeWorker} from '../server/index.mjs';
+const worker=makeWorker({'/':{body:'Habbit',type:'text/html'}}),env={HABBIT_SYNC_SECRET:'test-server-only',HABBIT_SYNC_URL:'https://example.invalid/edge'};
+let response=await worker.fetch(new Request('https://habbit.test/api/state'),env);assert.equal(response.status,401);
+response=await worker.fetch(new Request('https://habbit.test/api/state',{method:'PUT',headers:{'oai-authenticated-user-id':'owner','origin':'https://evil.test'},body:'{}'}),env);assert.equal(response.status,403);
+response=await worker.fetch(new Request('https://habbit.test/api/state',{method:'PUT',headers:{'oai-authenticated-user-id':'owner','origin':'https://habbit.test'},body:'{}'}),env);assert.equal(response.status,400);
+let forwarded;globalThis.fetch=async(url,options)=>{forwarded=JSON.parse(options.body);return Response.json({revision:2})};
+response=await worker.fetch(new Request('https://habbit.test/api/state',{method:'PUT',headers:{'oai-authenticated-user-id':'real-owner','origin':'https://habbit.test'},body:JSON.stringify({owner:'forged-owner',revision:1,data:{habits:[],sessions:[]}})}),env);assert.equal(response.status,200);assert.equal(forwarded.owner,'real-owner');
+globalThis.fetch=async()=>Response.json({conflict:true},{status:409});response=await worker.fetch(new Request('https://habbit.test/api/state',{headers:{'oai-authenticated-user-id':'owner'}}),env);assert.equal(response.status,409);
+response=await worker.fetch(new Request('https://habbit.test/'),env);assert.equal(await response.text(),'Habbit');
+console.log('PASS: identity, CSRF, validation, owner spoofing, conflict propagation, static content.');
