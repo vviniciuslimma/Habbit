@@ -42,8 +42,13 @@ Variáveis privadas da hospedagem: `HABBIT_SYNC_SECRET`, `HABBIT_SYNC_URL`. Nunc
 O plano Supabase Free pode pausar após inatividade. Não há contratação de plano pago. Backups JSON continuam disponíveis. Ao mover a hospedagem para outro domínio, exporte e importe o backup de registros ainda locais. O backend depende dos cabeçalhos de identidade autenticados da hospedagem Sites; não se deve hospedá-lo em um servidor que aceite esses cabeçalhos diretamente de visitantes sem validação.
 
 ## GitHub Pages com login próprio
-Execute `node scripts/build-pages.mjs` e publique a pasta `docs/` da branch `main` em Settings → Pages. Essa versão usa Supabase Auth com e-mail/senha, sem login do ChatGPT. Não há tela de cadastro. Somente contas presentes em `habbit.account_links` têm acesso, protegido por RLS. A ligação de contas é feita administrativamente, nunca pelo navegador nem por metadados editáveis.
+Execute `node scripts/build-pages.mjs` e publique a pasta `docs/` da branch `main` em Settings → Pages. Essa versão usa Supabase Auth com e-mail/senha, sem login do ChatGPT. A tela oferece Entrar e Criar conta. O primeiro login cria um documento próprio por uma RPC SECURITY INVOKER, com INSERT restrito por RLS ao auth.uid(). Contas antigas preservam seu vínculo existente. A propriedade nunca é decidida por metadados editáveis.
 
 A migração `002_habbit_account_login.sql` adiciona as funções e políticas de acesso. O vínculo privado aponta para o mesmo documento do site original, sem copiar o histórico. O SDK supabase-js está fixado em 2.119.2 e é carregado de jsDelivr. A chave `sb_publishable_...` é pública por definição e não concede acesso sem autenticação e autorização.
 
-Para entrar, use a senha da conta Supabase já existente. A senha nunca faz parte do código ou do repositório. Para redefini-la, utilize o fluxo seguro da conta; não envie senhas pelo chat. O cadastro de novas contas no projeto Treinago não é alterado globalmente: o isolamento do Habbit é aplicado no banco.
+Para entrar, use a senha da conta Supabase já existente. A senha nunca faz parte do código ou do repositório. Para redefini-la, utilize o fluxo seguro da conta; não envie senhas pelo chat. O cadastro usa a configuração de e-mail/senha já habilitada no projeto. O isolamento do Habbit é aplicado no banco, e o cache local e o cronômetro são separados por ID de usuário. Não se importa cache genérico de outra conta.
+
+## Cadastro e isolamento de contas
+A migração `20261124215104_habbit_self_service_accounts.sql` permite que cada usuário autenticado inicialize apenas o próprio documento e vínculo. A inicialização é idempotente e protegida contra concorrência. As contas existentes e seus históricos são preservados. O perfil usa o nome apenas para exibição; autorização depende de `auth.uid()` e RLS.
+
+Validação: `node scripts/test-auth-accounts.mjs` testa cadastro e isolamento do cache com autenticação simulada. `scripts/test-account-isolation.sql` testa duas contas no banco dentro de uma transação que termina em ROLLBACK, incluindo inicialização, leitura, tentativa de alteração cruzada e controle de revisão. Nenhuma conta de teste é mantida.

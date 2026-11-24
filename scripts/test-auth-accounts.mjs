@@ -1,0 +1,15 @@
+import vm from 'node:vm';import fs from 'node:fs';import assert from 'node:assert/strict';
+const source=fs.readFileSync('pages/auth.js','utf8');
+async function setup(id,store=new Map()){
+ const nodes=new Map(),node=()=>({hidden:false,disabled:false,textContent:'',value:'',required:false,classList:{add(){},remove(){}},append(){},replaceChildren(){},setAttribute(){},querySelector(selector){return get(selector)},querySelectorAll(){return [get('#login-tab'),get('#signup-tab')]}}),get=selector=>{if(!nodes.has(selector))nodes.set(selector,node());return nodes.get(selector)};
+ const form=get('form');for(const key of ['displayName','email','password','passwordConfirm'])form[key]=node();
+ const calls=[];let logged=false;
+ const client={auth:{getSession:async()=>({data:{session:logged?{user:{id},access_token:'test-token'}:null}}),getUser:async()=>({data:{user:{id,user_metadata:{display_name:'Pessoa '+id}}}}),signInWithPassword:async()=>{logged=true;return {data:{session:{user:{id}}}}},signUp:async()=>{calls.push('signup');logged=true;return {data:{session:{user:{id}}}}},signOut:async()=>{},onAuthStateChange(){}},rpc:async(name,args)=>{calls.push({name,args});return {data:{revision:1,data:{habits:[],sessions:[],money:[],events:[],marker:id}}}}};
+ const context=vm.createContext({supabase:{createClient:()=>client},window:{},document:{createElement:node,createTextNode:s=>s,body:{append(){},classList:{add(){},remove(){}}},querySelector:get},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},location:{reload(){}},defaults:[{id:'reading'}],today:()=> '2026-11-24',db:{marker:'UNSCOPED-PRIVATE'},timer:{},render(){},confirm:()=>true,JSON,AbortSignal});
+ vm.runInContext(source,context);await new Promise(r=>setImmediate(r));return {context,nodes,get,form,calls,store};
+}
+const store=new Map([['habbit-v1',JSON.stringify({marker:'OLD-USER-DATA',sessions:[{private:true}]})]]);
+let a=await setup('A',store);a.form.email.value='a@example.invalid';a.form.password.value='unit-test-password';await a.form.onsubmit({preventDefault(){}});assert.equal(a.context.db.marker,'A');assert.equal(a.context.window.habbitStorageKey,'habbit-v2:A');assert.equal(a.calls[0].args.p_initial.sessions.length,0);
+let b=await setup('B',store);b.get('#signup-tab').onclick();b.form.password.value='unit-test-password';b.form.passwordConfirm.value='different';await b.form.onsubmit({preventDefault(){}});assert.equal(b.calls.length,0);assert.match(b.get('#auth-message').textContent,/iguais/);
+b.form.email.value='b@example.invalid';b.form.displayName.value='Pessoa B';b.form.password.value=b.form.passwordConfirm.value='unit-test-password';await b.form.onsubmit({preventDefault(){}});assert.equal(b.context.db.marker,'B');assert.equal(b.context.window.habbitStorageKey,'habbit-v2:B');assert.equal(JSON.parse(store.get('habbit-v2:A')).marker,'A');assert.equal(b.calls[0],'signup');assert.equal(b.calls[1].args.p_initial.sessions.length,0);
+console.log('PASS: signup, password confirmation, distinct per-account caches, no import of another account history.');

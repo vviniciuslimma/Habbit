@@ -30,3 +30,4 @@ body.auth-locked>aside,body.auth-locked>main,body.auth-locked>dialog{display:non
  .habitbody b{font-size:16px}.habitbody small{font-size:14px}
  .mobile-tabs a span:last-child,.mobile-tabs button span:last-child{font-size:13px}
 }
+.authcard [hidden]{display:none!important}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:24px 0 18px;padding:5px;background:var(--bg);border-radius:12px}.auth-tabs button{min-height:44px;padding:9px 10px;border-color:transparent;background:transparent;color:var(--muted);font-size:14px}.auth-tabs button[aria-pressed="true"]{background:white;color:var(--purple);box-shadow:0 2px 8px #242b3510}html[data-theme="dark"] .auth-tabs button[aria-pressed="true"]{background:#353047;color:#d2c3ff}.auth-tabs button:disabled{opacity:.65;cursor:wait}
