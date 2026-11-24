@@ -1,7 +1,7 @@
 /* Responsive navigation and presentation. Records and desktop structure stay shared. */
 (()=>{
  const phone=window.matchMedia('(max-width:850px)');let toggle,bottom,backdrop;
- const items=[['inicio','⌂','Hoje'],['habitos','▦','Hábitos'],['agenda','▢','Agenda'],['treinos','◇','Treinos']];
+ const items=[['inicio','⌂','Hoje'],['habitos','▦','Hábitos'],['agenda','▢','Agenda'],['tarefas','☑','Tarefas']];
  function menu(open){document.body.classList.toggle('mobile-menu-open',open);toggle?.setAttribute('aria-expanded',String(open));if(toggle){toggle.textContent=open?'✕':'☰';toggle.setAttribute('aria-label',open?'Fechar menu':'Abrir menu')}if(backdrop)backdrop.hidden=!open;}
  function update(){
   if(!bottom)return;

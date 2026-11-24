@@ -41,6 +41,14 @@
   const session=await client.auth.getSession();if(!active||session.data.session?.user.id!==activeUser){lock();throw Error('Entre na sua conta para sincronizar.');}
   const rpc=method==='GET'?'habbit_account_read':'habbit_account_write';const response=await fetch('https://lpjkznammgscespgizud.supabase.co/rest/v1/rpc/'+rpc,{method:'POST',headers:{'content-type':'application/json',apikey:'sb_publishable_79q4O123UaTkQJToI5UIfw_KFwJYh1s',Authorization:'Bearer '+session.data.session.access_token},body:JSON.stringify(method==='GET'?{}:{p_data:body.data,p_revision:body.revision}),signal:AbortSignal.timeout(25000)});if(!response.ok){if(response.status===401)lock();throw Error('Sem sincronização · dados preservados neste aparelho');}const data=await response.json();if(!data)throw Error('Não foi possível abrir seu espaço.');return data;
  };
+ window.habbitTasksRequest=async(name,params={})=>{
+  const allowed=['habbit_tasks_list','habbit_tasks_invite','habbit_tasks_accept','habbit_tasks_create','habbit_tasks_complete','habbit_tasks_disconnect'];
+  if(!allowed.includes(name))throw Error('Operação inválida.');
+  const session=await client.auth.getSession();if(!active||session.data.session?.user.id!==activeUser){lock();throw Error('Entre na sua conta para abrir as tarefas.');}
+  const response=await fetch('https://lpjkznammgscespgizud.supabase.co/rest/v1/rpc/'+name,{method:'POST',headers:{'content-type':'application/json',apikey:'sb_publishable_79q4O123UaTkQJToI5UIfw_KFwJYh1s',Authorization:'Bearer '+session.data.session.access_token},body:JSON.stringify(params),signal:AbortSignal.timeout(25000)});
+  if(!response.ok){if(name==='habbit_tasks_accept')throw Error('Código inválido, vencido ou já utilizado. Confira com quem enviou.');throw Error('Não foi possível atualizar as tarefas. Tente novamente.');}
+  return response.json();
+ };
  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')lock();else if(activeUser&&session?.user.id!==activeUser){lock();location.reload()}});
  client.auth.getSession().then(({data})=>{if(data.session)unlockAccount()}).catch(()=>{message.textContent='Não foi possível verificar sua sessão.'});
 })();

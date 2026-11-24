@@ -52,3 +52,10 @@ Para entrar, use a senha da conta Supabase já existente. A senha nunca faz part
 A migração `20261124215104_habbit_self_service_accounts.sql` permite que cada usuário autenticado inicialize apenas o próprio documento e vínculo. A inicialização é idempotente e protegida contra concorrência. As contas existentes e seus históricos são preservados. O perfil usa o nome apenas para exibição; autorização depende de `auth.uid()` e RLS.
 
 Validação: `node scripts/test-auth-accounts.mjs` testa cadastro e isolamento do cache com autenticação simulada. `scripts/test-account-isolation.sql` testa duas contas no banco dentro de uma transação que termina em ROLLBACK, incluindo inicialização, leitura, tentativa de alteração cruzada e controle de revisão. Nenhuma conta de teste é mantida.
+
+## Tarefas compartilhadas
+A aba Tarefas usa tabelas separadas do diário privado. Quem recebe gera um código de convite de uso único, válido por sete dias; quem envia cadastra sua conta e aceita o código. O vínculo não concede acesso a hábitos, finanças, treinos ou agenda pessoal. Apenas o destinatário conclui ou reabre tarefas; o remetente acompanha o status enquanto o vínculo estiver ativo. O destinatário pode encerrar o vínculo, bloqueando novos envios e o acompanhamento pelo remetente, sem apagar o histórico recebido.
+
+Os códigos são gerados criptograficamente e guardados apenas como SHA-256. O único helper SECURITY DEFINER fica no schema privado, valida a identidade autenticada, o código, a validade e o uso único; não aceita um destinatário arbitrário. As demais operações usam SECURITY INVOKER, RLS e privilégios restritos por coluna.
+
+A lista atualiza ao abrir a aba, ao voltar à janela e a cada 30 segundos com a aba visível. `scripts/test-shared-tasks.sql` valida envio autorizado, conclusão, uso único, bloqueio de terceiros, isolamento do diário e revogação dentro de transação com ROLLBACK.
