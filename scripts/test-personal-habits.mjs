@@ -1,0 +1,22 @@
+import vm from 'node:vm';import fs from 'node:fs';import assert from 'node:assert/strict';import {webcrypto} from 'node:crypto';
+const elements=new Map(),storage=new Map();const el=key=>{if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',style:{}});return elements.get(key)};
+const context=vm.createContext({Date,JSON,crypto:webcrypto,window:{addEventListener(){},habbitStorageKey:'habbit-v2:account-a'},location:{hash:'#habitos'},document:{querySelector:el},localStorage:{getItem:()=>null,setItem:(k,v)=>storage.set(k,v)},setInterval(){},setTimeout(){},clearTimeout(){},alert:()=>{},confirm:()=>true});vm.runInContext(fs.readFileSync('dist/app.js','utf8'),context);
+vm.runInContext(`
+ const past=parse(wid());past.setDate(past.getDate()-7);const previousWeek=iso(past);
+ const future=parse(wid());future.setDate(future.getDate()+7);const futureWeek=iso(future);
+ db.plans[previousWeek]=db.habits.map(h=>({...h}));db.plans[futureWeek]=db.habits.map(h=>({...h}));
+ const oldPlan=JSON.stringify(db.plans[previousWeek]);
+ if(!createPersonalHabit({name:'  Meditar  ',icon:'✦',schedule:'fixed',day1:'on',day3:'on',day5:'on',minutes:'15'}))throw Error('Could not create fixed habit');
+ const h=db.habits.at(-1);
+ if(h.name!=='Meditar'||h.target!==3||h.days.join(',')!=='1,3,5'||h.minutes!==15)throw Error('Wrong fixed configuration');
+ if(JSON.stringify(db.plans[previousWeek])!==oldPlan)throw Error('Historical plan was changed');
+ const yesterday=now();yesterday.setDate(yesterday.getDate()-1);
+ if(plan(iso(yesterday)).some(x=>x.id===h.id))throw Error('New habit appeared in past days');
+ if(!db.plans[futureWeek].some(x=>x.id===h.id))throw Error('New habit missing from future plan');
+ if(createPersonalHabit({name:'meditar',schedule:'flexible',target:'3',minutes:'0'})!==false)throw Error('Duplicate allowed');
+ if(createPersonalHabit({name:'New',schedule:'fixed',minutes:'0'})!==false)throw Error('Missing fixed days allowed');
+ if(!createPersonalHabit({name:'Caminhar',schedule:'flexible',target:'5',minutes:'20'}))throw Error('Flexible habit failed');
+ save();
+`,context);
+assert(storage.has('habbit-v2:account-a'));assert(!storage.has('habbit-v2:account-b'));assert(!storage.has('habbit-v1'));
+console.log('PASS: personal habits, fixed/flexible schedules, daily minimum, validation, preserved history, account-scoped saving.');

@@ -59,3 +59,6 @@ A aba Tarefas usa tabelas separadas do diário privado. Quem recebe gera um cód
 Os códigos são gerados criptograficamente e guardados apenas como SHA-256. O único helper SECURITY DEFINER fica no schema privado, valida a identidade autenticada, o código, a validade e o uso único; não aceita um destinatário arbitrário. As demais operações usam SECURITY INVOKER, RLS e privilégios restritos por coluna.
 
 A lista atualiza ao abrir a aba, ao voltar à janela e a cada 30 segundos com a aba visível. `scripts/test-shared-tasks.sql` valida envio autorizado, conclusão, uso único, bloqueio de terceiros, isolamento do diário e revogação dentro de transação com ROLLBACK.
+
+## Hábitos personalizados
+Todas as contas podem criar hábitos pelos botões Novo hábito na tela inicial e no topo de Meus hábitos. O formulário permite nome, ícone, dias fixos ou meta semanal flexível e mínimo diário em minutos. Zero minutos permite marcação simples. A criação vale a partir de hoje, preserva planos antigos e inclui o hábito em planejamentos futuros existentes. Dados permanecem no documento e cache privados da conta autenticada. `node scripts/test-personal-habits.mjs` valida essas regras.
